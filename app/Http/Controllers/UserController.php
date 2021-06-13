@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\User\UserStoreRequest;
+use App\Http\Requests\User\UserUpdateRequest;
 use App\Models\User;
+use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -10,6 +13,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Yajra\DataTables\DataTables;
 
@@ -82,6 +87,13 @@ class UserController extends Controller
                               title="Επεξεργασία">
                                 Επεξεργασία
                            </a>';
+                $buttons .= '<a href="' . route('users.show', $row->id) . '"
+                              class="btn btn-sm light btn-dark"
+                              data-toggle="tooltip"
+                              data-placement="top"
+                              title="Επεξεργασία">
+                                Προβολή
+                           </a>';
 //
 //
                 if($row->is_active == 0){
@@ -129,6 +141,7 @@ class UserController extends Controller
      */
     public function create()
     {
+        Log::info('entered');
 
         return view('pages.admin.users.create');
 
@@ -137,12 +150,27 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return Response
+     * @param UserStoreRequest $request
+     * @return RedirectResponse
      */
-    public function store(Request $request)
+    public function store(UserStoreRequest $request): RedirectResponse
     {
-        //
+        if (request()->has('avatar')) {
+            $avatar = request()->file('avatar');
+            $avatarName = time() . '.' . $avatar->getClientOriginalExtension();
+            $avatarPath = public_path('/images/');
+            $avatar->move($avatarPath, $avatarName);
+        }
+
+        $user = User::create([
+            'name'     => $request['name'],
+            'email'    => $request['email'],
+            'password' => Hash::make($request['password']),
+            'dob'      => date('Y-m-d', strtotime($request['dob'])),
+            'avatar'   => "/images/" . $avatarName,
+        ]);
+
+        return redirect()->route('users.index')->with('success','User has been saved');
     }
 
     /**
@@ -151,20 +179,20 @@ class UserController extends Controller
      * @param  int  $id
      * @return Response
      */
-    public function show($id)
+    public function show(User $user)
     {
-        //
+       return view('pages.admin.users.show')->with('user',$user);
     }
 
     /**
      * Show the form for editing the specified resource.
      *
      * @param  int  $id
-     * @return Response
+     * @return Application|Factory|View
      */
     public function edit(User $user)
     {
-        return view('pages.admin.users.create');
+        return view('pages.admin.users.edit')->with('user',$user);
     }
 
     /**
@@ -172,22 +200,41 @@ class UserController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return Response
+     * @return RedirectResponse
      */
-    public function update(Request $request, $id)
+    public function update(UserUpdateRequest $request, User $user): RedirectResponse
     {
-        //
+        $avatarName = '';
+        if (request()->has('avatar')) {
+            $avatar = request()->file('avatar');
+            $avatarName = time() . '.' . $avatar->getClientOriginalExtension();
+            $avatarPath = public_path('/images/');
+            $avatar->move($avatarPath, $avatarName);
+        }
+
+        $user = $user->update([
+            'name'     => $request['name'],
+            'email'    => $request['email'],
+            'password' => Hash::make($request['password']),
+            'dob'      => date('Y-m-d', strtotime($request['dob'])),
+            'avatar'   => $avatarName != '' ? "/images/" . $avatarName : $user->avatar,
+        ]);
+
+        return redirect()->route('users.index')->with('success','User has been saved');
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
-     * @return Response
+     * @param User $user
+     * @return RedirectResponse
+     * @throws Exception
      */
-    public function destroy($id)
+    public function destroy(User $user): RedirectResponse
     {
-        //
+        $user->delete();
+
+        return redirect()->route('users.index')->with('success','User has been deleted');
     }
 
     /**
@@ -196,7 +243,7 @@ class UserController extends Controller
      * @param User $user
      * @return RedirectResponse
      */
-    public function toggle_is_active(User $user)
+    public function toggle_is_active(User $user): RedirectResponse
     {
         $user->is_active = !$user->is_active;
         $user->update();
