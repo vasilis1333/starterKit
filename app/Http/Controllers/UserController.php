@@ -70,58 +70,12 @@ class UserController extends Controller
             })
 
             ->addColumn('action2', function ($row) {
-                $buttons = '';
-//                $buttons .= '<button
-//                                id="updateUser"
-//                                data-id="' . $row->id . '"
-//                                data-toggle="modal"
-//                                data-toggle="tooltip" data-placement="top" title="Επεξεργασία"
-//                                data-original-title="Επεξεργασία"
-//                                class="btn btn-outline-info btn-sm  mr-2 updateUserModal">
-//                                <i class="fe fe-edit "><!-- --></i></button>&nbsp;';
-//
-                $buttons .= '<a href="' . route('users.edit', $row->id) . '"
-                              class="btn btn-sm light btn-info"
-                              data-toggle="tooltip"
-                              data-placement="top"
-                              title="Επεξεργασία">
-                                Επεξεργασία
-                           </a>';
-                $buttons .= '<a href="' . route('users.show', $row->id) . '"
-                              class="btn btn-sm light btn-dark"
-                              data-toggle="tooltip"
-                              data-placement="top"
-                              title="Επεξεργασία">
-                                Προβολή
-                           </a>';
-//
-//
-                if($row->is_active == 0){
-                    $buttons .= '   <form style="display: inline-block"
-                                   action="' . route('users.activate', $row->id) . '"
-                                   method="POST">
-                                   <input type="hidden" name="_token" value="' . csrf_token() . '">
-                                   <button type="submit"
-                                           class="btn btn-sm light btn-success"
-                                           onclick="return confirm(\'Είστε σίγουρος(η) για την ενεργοποίηση του χρήστη?\')">
 
-                                        Ενεργοποίηση
-                                   </button>
-                                 </form> &nbsp;';
-                }else{
-                    $buttons .= '   <form style="display: inline-block"
-                                   action="' . route('users.activate', $row->id) . '"
-                                   method="POST">
-                                   <input type="hidden" name="_token" value="' . csrf_token() . '">
-                                   <button type="submit"
+                $buttons  = $this->editButtonToHtml(route('users.edit',$row->id));
+                $buttons .= $this->showButtonToHtml(route('users.show',$row->id));
+                $buttons .= $this->activeInactiveButtonToHtml($row,route('users.activate',$row->id));
 
-                                            class="btn btn-sm light btn-danger"
-                                           onclick="return confirm(\'Είστε σίγουρος(η) για τη απενεργοποίηση του χρήστη?\')">
 
-                                        Απενεργοποίηση
-                                   </button>
-                                 </form> &nbsp;';
-                }
 
 
 
@@ -133,6 +87,8 @@ class UserController extends Controller
             ->make(true);
 
     }
+
+
 
     /**
      * Show the form for creating a new resource.
